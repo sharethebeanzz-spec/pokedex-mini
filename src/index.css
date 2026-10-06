@@ -1,0 +1,2773 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  /* ── Pokédex design tokens ─────────────────────────────────────────
+     "Playful franchise" palette: sunny page, sticker-style surfaces
+     (thick ink outlines + hard offset shadows), one warm Pokéball-red
+     accent and a bright pop-yellow (pokéball-button yellow). Per-type
+     color stays LIVE — the type-tinted heroes, type badges, the
+     type-filter bar and evolution accents are still driven by the
+     Pokémon's type (types.js / inline vars in JSX); these tokens only
+     style the neutral chrome around that. */
+  /* brand accent (pokéball red) */
+  --accent: #e33b2e;
+  --accent-deep: #b32318;
+  --accent-soft: rgba(227, 59, 46, 0.12);
+  /* pop yellow — pokéball-button yellow; sticker shadows + tiny accents */
+  --pop: #ffd800;
+  /* sunny paper + ink neutrals */
+  --paper: #fdf4dc;       /* page background (sunny cream) */
+  --paper-deep: #f7e8c0;  /* inset / alt surface (deeper cream) */
+  --surface: #fffdf8;     /* cards & panels (warm white) */
+  --ink: #151e2b;         /* outlines + headings + dark UI (deep ink) */
+  --ink-2: #3a4658;       /* primary body text */
+  --ink-3: #5b6b7c;       /* secondary text / labels */
+  --ink-4: #8794a3;       /* muted text / placeholders */
+  --line: rgba(21, 30, 43, 0.1);      /* soft hairline border */
+  /* shared "sticker" language: a hard offset shadow (no blur — stuck-on look) */
+  --sticker-shadow: 3px 4px 0 var(--ink);
+  /* dark "device" panel (the TCG cards section) */
+  --panel: #151e2b;
+  --panel-deep: #0f1420;
+}
+
+
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* flat grey only — the dotted texture was moved to a fixed layer
+     (body::below, see .bg-dots) so it doesn't repaint on every scroll
+     frame; a scrolling tiled background on the root forced a full-viewport
+     repaint each frame, the main page's draggy-scroll cost */
+  background: var(--paper);
+  color: var(--ink);
+  /* the full-bleed Pokémon-of-the-day card uses 100vw; hide the
+     horizontal overflow it can cause when a vertical scrollbar is present */
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* thin themed scrollbar on Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink) var(--paper);
+}
+
+/* themed scrollbar on webkit: ink thumb on the paper track */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: var(--paper);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border-radius: 999px;
+  border: 3px solid var(--paper);
+}
+
+/* text selection in the franchise colors */
+::selection {
+  background: var(--pop);
+  color: var(--ink);
+}
+
+/* #6 — the faint pokéball-dot texture now lives in its own fixed layer
+   (tiny dots on a 24px grid, ~3.5% black) over the light grey page.
+   Fixed = composited: it costs nothing while the page scrolls, whereas
+   the old body background repainted its whole tiled area per frame. */
+.bg-dots {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  /* ink dots, a touch darker so they read on the sunny page */
+  background: radial-gradient(
+    circle at 1px 1px,
+    rgba(21, 30, 43, 0.05) 1px,
+    transparent 1.5px
+  );
+  background-size: 24px 24px;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  /* top padding is gone — the sticky site navbar sits flush at the
+     viewport top; bottom padding keeps the footer's breathing room */
+  padding: 0 16px 32px;
+  /* #1 — establish a stacking context so the fixed .page-tint layer
+     (z-index: -1, rendered inside this tree) sits behind the content
+     but still above the body's dot texture */
+  position: relative;
+  z-index: 0;
+}
+
+/* ── Site navbar (global, sticky at the very top of the viewport) ──
+   Full-bleed bar: white/blur background, thin bottom border, red accent.
+   Sits above the floating TypeNavbar pill (z-index 100) so it never
+   collides with it. */
+.site-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 110;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* generous side padding pulls the logo (left) and the buttons (right)
+     slightly toward the middle of the bar */
+  padding: 10px 32px;
+  /* sticker language: crisp ink bottom edge + a hard pop-yellow strip
+     under it (reads as the bar being "stuck on" the page) */
+  background: var(--surface);
+  border-bottom: 2px solid var(--ink);
+  box-shadow: 0 4px 0 var(--pop), 0 6px 14px rgba(21, 30, 43, 0.08);
+  transition: transform 0.3s ease;
+}
+
+/* Hand-off (main page only): when the sticky type pill is about to reach
+   the bar's bottom edge, SiteNavbar toggles .site-navbar-hidden on <body>.
+   The bar *retracts up off the top of the screen* (translateY, not a fade)
+   a bit before it touches the pill, and the pill eases up from its 56px
+   offset to an 8px gap so it lands near the top instead of leaving a void. */
+body.site-navbar-hidden .site-navbar {
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+body.site-navbar-hidden .type-navbar {
+  top: 8px;
+}
+
+.site-navbar-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--ink);
+}
+
+.pokeball-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  /* pokéball: red top half, ink band, white bottom half */
+  background:
+    linear-gradient(to bottom, var(--accent) 42%, var(--ink) 42%, var(--ink) 58%, #fff 58%);
+  border: 2px solid var(--ink);
+  position: relative;
+}
+/* the little button in the middle of the ball */
+.pokeball-logo::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  /* the ball's little button — pop yellow, like a real pokéball */
+  background: var(--pop);
+  border: 2px solid var(--ink);
+}
+
+.site-navbar-wordmark {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.site-navbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.site-nav-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-2);
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.site-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink);
+}
+/* TCG button reads as the "action" of the bar — red accent */
+.site-nav-btn-tcg {
+  color: var(--accent);
+}
+.site-nav-btn-tcg:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+/* Browse (home-page replacement for the no-op Home button): same "action"
+   treatment as the TCG button */
+.site-nav-btn-browse {
+  color: var(--accent);
+}
+.site-nav-btn-browse:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+/* Home sits beside the wordmark, so match the wordmark's 17px size */
+.site-nav-btn-home {
+  font-size: 17px;
+}
+
+/* #shiny — "Shiny mode" toggle on the light site navbar (detail pages).
+   Same base pill as the other site-nav buttons; the on state is a
+   pop-yellow sticker so it's clearly "active" on the light bar. */
+.site-nav-btn-shiny {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  /* also transition the sticker border/shadow so turning it on eases in */
+  transition: background 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.site-nav-btn-shiny .shiny-glyph {
+  font-size: 13px;
+}
+.site-nav-btn-shiny-on {
+  background: var(--pop);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 3px 0 var(--ink);
+}
+.site-nav-btn-shiny-on:hover {
+  background: var(--pop);
+  color: var(--ink);
+  transform: translate(1px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* #1 + A — full-page background tint, rendered by ListPage as a fixed layer
+   behind everything on the page (main card, navbar, grid, footer).
+   Painted as a top→bottom gradient via the two CSS vars set on the div:
+   the active type color at 30% alpha at the very top of the screen
+   (behind the main card) fading to transparent over ~1000px — long enough
+   that the sticky navbar's zone below the card still picks up the tint;
+   a faint neutral grey when "All". */
+.page-tint {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    var(--page-tint-top, rgba(128, 128, 128, 0.1)) 0px,
+    var(--page-tint-fade, rgba(128, 128, 128, 0)) 1000px
+  );
+}
+
+h1 {
+  text-align: center;
+  color: var(--accent);
+}
+
+.pod-section {
+  /* full-bleed: stretch across the entire viewport, not just the 480px column */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  /* the card sits flush against the sticky site-navbar bar */
+  margin-top: 0;
+  margin-bottom: 42px;
+}
+
+.pod-card {
+  position: relative;
+  overflow: hidden;
+  /* top corners square (0); the bottom two corners each take 50% of
+     the width so they meet exactly at the bottom center — one continuous
+     downward arc (a shallow U) across the full card width */
+  border-radius: 0 0 50% 50% / 0 0 22% 22%;
+  color: white;
+  /* sticker frame: thick ink outline; the per-Pokémon type-tinted
+     gradient (set inline) is the card's "sticker color" */
+  border: 3px solid var(--ink);
+  /* full-bleed card, so only a flat downward hard sticker shadow (no side
+     offset, which would be clipped at the viewport edges) */
+  box-shadow: 0 10px 0 var(--ink);
+}
+
+.pod-card::before {
+  /* The type's scattered motif texture lives in its own layer so it can
+     drift on its own (see @keyframes pod-motif-drift below). It's fed by
+     the --pod-motif / --pod-motif-size custom properties that the card's
+     inline style sets per type (see PokemonOfTheDay.jsx). Positioned at
+     z-index 0 so it sits above the card's own background (gradient +
+     depth layers) but below the logo/content (z-index 1).
+     The layer extends one full 400px tile period below the card's bottom
+     edge (bottom: -400px, clipped by .pod-card's overflow: hidden) so the
+     transform-based drift never exposes an edge while moving. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  bottom: -400px;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--pod-motif);
+  background-size: var(--pod-motif-size, 400px 400px);
+  background-repeat: repeat;
+  /* promote to its own compositor layer — the drift only touches
+     transform, so it costs nothing while the page scrolls */
+  will-change: transform;
+  animation: pod-motif-drift 40s linear infinite;
+}
+
+@keyframes pod-motif-drift {
+  /* GPU-composited version of the drift: translate the whole layer up by
+     exactly one 400px tile period (the repeat loops seamlessly). The old
+     version animated background-position, which forced a CPU redraw of
+     this large card area on every frame — the main page's scroll lag. */
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-400px);
+  }
+}
+
+/* Pokémon wordmark, centered near the top of the card. It's a normal
+   in-flow element (sits above .pod-content), so adding it makes the
+   card a bit taller to fit it. max-width keeps it from dominating on
+   small screens. */
+.pod-logo {
+  display: block;
+  margin: 40px auto;
+  width: 252px; /* 10% smaller than the original 280px */
+  max-width: 42vw;
+  height: auto;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+}
+
+.pod-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0px;
+  padding: 57px 45px 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+  /* shrink only what's INSIDE the card (text, image, button) by 20% and
+     lift it 115px. translate first so the -115px isn't itself scaled down.
+     transform doesn't affect layout, so the card/background keeps its
+     exact size; anchored to the bottom so it scales upward */
+  transform: translateY(-115px) scale(0.8);
+  transform-origin: 50% 100%;
+}
+
+.pod-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pod-label {
+  margin: 0 0 16px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.pod-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+/* Cry button on the main-page card: same round sticker as the detail-page
+   .cry-button (accent face, ink outline, hard shadow), sized up for the big
+   card. Sits inline after the dex number. The row is baseline-aligned
+   (name + dex id), so the button pins itself to the vertical center of the
+   row with align-self. */
+.pod-cry-button {
+  align-self: center;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 3px 4px 0 var(--ink);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pod-cry-button:hover {
+  transform: scale(1.06) translate(1px, 1px);
+  box-shadow: 4px 5px 0 var(--ink);
+}
+.pod-cry-button:active {
+  transform: scale(0.97) translate(2px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.pod-name {
+  margin: 0;
+  font-size: 65px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.pod-id {
+  font-family: monospace;
+  font-size: 36px;
+  opacity: 0.8;
+}
+
+.pod-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.pod-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 24px 8px 10px;
+  border-radius: 999px;
+  font-size: 27px;
+  font-weight: 700;
+  /* The first type's badge shares its hue with the card's background, so an
+     ink outline + hard offset shadow lifts it off the card (same sticker
+     language as the detail-page .detail-type-pill). */
+  border: 2.5px solid var(--ink);
+  box-shadow: 3px 4px 0 var(--ink);
+}
+
+/* Type glyph inside the main-card badge: a small darker disc holding the
+   monochrome icon (same look as the detail page's .detail-type-icon, scaled
+   up for the 27px badge). Inherits the badge's text color, so it stays
+   readable on both dark-text and white-text type colors. */
+.pod-type-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+}
+
+.pod-description {
+  margin: 24px 0 0;
+  font-size: 29px;
+  line-height: 1.5;
+  opacity: 0.92;
+  max-width: 527px;
+}
+
+.pod-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  /* yellow sticker pill: ink outline + hard shadow, "stuck on" the card */
+  background: var(--pop);
+  border: 2.5px solid var(--ink);
+  box-shadow: var(--sticker-shadow);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pod-button:hover {
+  /* press-in: the hard shadow collapses as the pill "pushes down" */
+  transform: translate(2px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* pressed state for every sticker button/pill: one step deeper than the
+   hover press-in — the shadow fully collapses and the sticker sinks
+   with the cursor. */
+.pod-button:active,
+.profile-nav-button:active,
+.evolution-link:active,
+.not-found-button:active,
+.grid-empty-clear:active {
+  transform: translate(3px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.type-pill:active {
+  transform: scale(0.97);
+}
+
+.pod-art {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+}
+
+.pod-art img {
+  width: 445px;
+  height: 435px;
+  object-fit: contain;
+  /* sticker chip: near-opaque white with an ink outline + hard shadow
+     and a slight tilt, so the artwork looks "stuck on" the card */
+  background: rgba(255, 253, 248, 0.95);
+  border: 3px solid var(--ink);
+  box-shadow: 5px 6px 0 var(--ink);
+  border-radius: 52px;
+  transform: rotate(2deg);
+  /* gentle bob, matching the detail page's hero-art float. Transforms are
+     compositor-only and the tilt is baked into the keyframes so it
+     survives the animation. Kept small + slow on purpose: it touches only
+     this one element's layer, never the card or the page around it, so it
+     can't add scroll cost. */
+  animation: pod-art-float 3.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.status {
+  text-align: center;
+  font-size: 18px;
+  color: var(--ink-3);
+}
+
+.status-error {
+  color: var(--accent);
+}
+
+.pokemon-list {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pokemon-list-item {
+  /* visual styling moved to .pokemon-link below, since that's the clickable card now */
+}
+
+.pokemon-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+  color: inherit;
+}
+
+.pokemon-link:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* the detail page's bottom now closes on the shared site <Footer/>
+   (Pokéball divider + caption), so the old "back to home" / "back to top"
+   bottom buttons and their styles are gone. */
+.detail-page {
+  /* full-bleed breakout: escape the .app 480px column so the detail page
+     spans the whole viewport (same technique as .pod-section). Re-adds
+     its own padding since we've left .app's 16px behind. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  /* .app no longer has top padding (the sticky site navbar owns the top),
+     so the old -32px lift would pull the hero under the bar — a small
+     gap below it instead */
+  margin-top: 8px;
+  padding: 16px 64px 40px;
+  text-align: left;
+  /* flex column + at-least-viewport height so the closing footer can be
+     pinned to the very bottom of the page (see .detail-page > .site-footer).
+     calc subtracts the 8px top margin so the column ends exactly at 100vh. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 8px);
+}
+
+.profile-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.profile-nav-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 121px;
+  padding: 9px 20px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--sticker-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+
+.profile-nav-button:hover {
+  /* press-in sticker */
+  transform: translate(1px, 2px);
+  box-shadow: 1px 2px 0 var(--ink);
+}
+
+
+.profile-nav-prev {
+  justify-content: flex-start;
+}
+
+.profile-nav-next {
+  justify-content: flex-end;
+}
+
+.profile-nav-arrow {
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.profile-nav-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.profile-nav-name {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.profile-nav-id {
+  font-family: monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* --- profile: transparent art square on the left, info column on the right --- */
+.detail-page {
+  /* #2 — type-tinted wash behind the profile: a soft radial in the first
+     type's color (--wash-color, set inline by DetailPage) layered over
+     the page background, fading out toward the bottom. The solid
+     background-color layer underneath tints the WHOLE page (not just the
+     top) in the Pokémon's first type color, so the whole detail page
+     reads as that type's sheet */
+  background-color: var(--wash-color, rgba(104, 144, 240, 0.1));
+  background-image: radial-gradient(
+    ellipse 90% 55% at 50% 0%,
+    var(--wash-color, rgba(104, 144, 240, 0.1)) 0%,
+    rgba(245, 245, 245, 0) 70%
+  );
+}
+
+/* hero: one big rounded panel tinted with the Pokémon's type color (the two
+   gradient stops are set inline on .detail-page as --hero-top / --hero-mid /
+   --hero-bottom).
+   The prev/next pills float in the panel's top corners, over the tint. */
+.detail-hero {
+  /* three-stop "sunny" type gradient: lightened type color at the top, the
+     vivid type color through the middle, a slightly deeper type color at
+     the bottom for depth. All stops are solid + bright (never murky) so the
+     panel pops while its ink text stays readable. Stops are set inline on
+     .detail-page as --hero-top / --hero-mid / --hero-bottom. */
+  background: linear-gradient(
+    180deg,
+    var(--hero-top, #b3c9f5) 0%,
+    var(--hero-mid, #6890f0) 50%,
+    var(--hero-bottom, #4f6fd0) 100%
+  );
+  /* the hero keeps its per-Pokémon type tint (set inline); the sticker
+     frame below makes it read as a sheet from a sticker book */
+  border: 3px solid var(--ink);
+  border-radius: 30px;
+  box-shadow: 6px 7px 0 var(--ink);
+  padding: 50px 58px 58px;
+  margin: 8px 0 0;
+}
+
+.detail-hero .profile-nav {
+  margin: 0 0 35px;
+}
+
+/* three-zone body: [artwork | name+badges+measurements+abilities |
+   description card]. All three align-items: center so the description card
+   is vertically centered against the Pokémon info column. */
+.detail-hero-body {
+  display: grid;
+  /* [art] [info] [description card].
+     Column 2 is a DEFINITE 360px on desktops (the min‑max below only caps
+     it for narrower screens where a definite width would overflow). That's
+     what locks the description card's position: because the middle column
+     is no longer content‑sized, the card's left edge no longer follows
+     each Pokémon's longest name/ability row. Measured across all 100
+     Gen‑1 entries, the widest info row is Kingler/Krabby's ability chips
+     ("Hyper‑cutter, Shell Armor, Sheer Force" ≈ 337px), so 360px fits
+     every Pokémon with headroom. */
+  grid-template-columns: 460px minmax(0, 360px) minmax(0, 330px);
+  /* per-column gutters: art↔info = 26px, info↔description = 40px.
+     The comma-list line is newer syntax — the uniform 40px line below it
+     is the fallback for browsers that drop it. */
+  column-gap: 40px;
+  column-gap: 26px, 40px;
+  align-items: center;
+}
+
+/* DESKTOPS (the sizes where you browse the detail pages): pin the middle
+   column to an exact 360px so the description card sits at the SAME
+   position for every Pokémon (and every screen size ≥1380). 460 + 26 +
+   360 + 40 + 330 = 1216px of content, which fits inside the 1380px
+   viewport's available width with room to spare. Below this the min‑max
+   cap above still keeps things safe. */
+@media (min-width: 1380px) {
+  .detail-hero-body {
+    grid-template-columns: 460px 360px minmax(0, 330px);
+  }
+}
+
+.detail-art {
+  display: grid;
+  place-items: center;
+  /* containing block for the #14 absolutely-positioned sparkles */
+  position: relative;
+  /* #dir3 — the whole art slot leans slightly so the official artwork
+     reads as a sticker stuck on the page; the img keeps its float
+     animation (the animation's transform owns the img, the tilt lives
+     on the container so the two compose) */
+  transform: rotate(-4deg);
+}
+
+.detail-art img {
+  width: 360px;
+  height: 360px;
+  object-fit: contain;
+  /* #dir3 — hard offset sticker shadow instead of the soft blur */
+  filter: drop-shadow(0 12px 0 rgba(21, 30, 43, 0.2));
+  /* gentle up-and-down hover so the artwork feels alive (transform-only,
+     so it's GPU-composited and cheap while scrolling) */
+  animation: detail-art-float 3.5s ease-in-out infinite;
+}
+
+
+@keyframes detail-art-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* gentle bob for the main-page card's artwork, in the spirit of
+   detail-art-float. The 2deg tilt is carried into every frame so the
+   "stuck on" look survives the animation. */
+@keyframes pod-art-float {
+  0%,
+  100% {
+    transform: rotate(2deg) translateY(0);
+  }
+  50% {
+    transform: rotate(2deg) translateY(-8px);
+  }
+}
+
+/* #14 — the "shiny" sparkles scattered around the detail-page artwork.
+   Each sparkle is a positioned ✦ glyph (its top/left/right/bottom + size +
+   twinkle delay come inline from DetailPage.jsx). The twinkle is a
+   transform/opacity-only keyframe so it's cheap to run on every frame. */
+.detail-art-spark {
+  position: absolute;
+  color: var(--spark-color, #fff);
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+  /* a soft glow in the sparkle's own color (light type tint). The plain
+     white line is the fallback for browsers without color-mix. */
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--spark-color, #fff) 70%, transparent);
+  /* slower twinkle than before (was 1.8s) — a lazy, ambient glint */
+  animation: art-spark-twinkle 3.4s ease-in-out infinite;
+}
+
+@keyframes art-spark-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pokemon-name-title {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* #3 — name + cry button sit on one row */
+.detail-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cry-button {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 2px 3px 0 var(--ink);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+
+.cry-button:hover {
+  transform: scale(1.05) translate(1px, 1px);
+  box-shadow: 3px 4px 0 var(--ink);
+}
+
+
+/* #1 — height / weight, right under the id, small pills */
+.detail-measurements {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 0;
+}
+
+/* #1 — height / weight as white floating chips over the type-tinted hero
+   (like the reference's translucent stat chips on the imagery) */
+.measurement {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  /* sticker chip over the type-tinted hero */
+  background: rgba(255, 253, 248, 0.92);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-2);
+  backdrop-filter: blur(4px);
+}
+
+
+.measurement-label {
+  font-weight: 800;
+  color: var(--accent);
+  font-family: monospace;
+}
+
+.measurement-value {
+  font-weight: 700;
+}
+
+.pokemon-dex-id {
+  font-family: monospace;
+  font-size: 18px;
+  color: rgba(0, 0, 0, 0.5);
+  margin-top: -6px;
+}
+
+.detail-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px 5px 5px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: lowercase;
+  /* sticker badge: ink outline + hard shadow */
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+
+/* small circular disc the type glyph sits on (a touch darker than the pill
+   so the icon reads like a chip, as in the reference) */
+.detail-type-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+}
+
+/* description card: subtle rounded white/translucent panel with a small red
+   accent line on the left. Sits in the hero's right column, vertically
+   centered against the Pokémon info (grid align-items: center). */
+.detail-description-card {
+  background: rgba(255, 253, 248, 0.92);
+  border: 2.5px solid var(--ink);
+  border-left: 6px solid var(--accent);
+  border-radius: 20px;
+  box-shadow: 4px 5px 0 rgba(21, 30, 43, 0.12);
+  /* inner room: generous but balanced against the 20px text */
+  padding: 24px 29px;
+  backdrop-filter: blur(4px);
+  /* #4 — sit the card a touch lower within the hero's center row so it
+     doesn't float level with the tallest info column. 20px offset, pure
+     position (no layout shift to the neighboring columns). */
+  position: relative;
+  top: 20px;
+}
+
+
+/* the text inside: a comfortable measure (wraps to ~2–3 lines) with a
+   relaxed line-height */
+.detail-description {
+  margin: 0;
+  max-width: 51ch;
+  color: var(--ink-2);
+  line-height: 1.5;
+  font-size: 20px;
+  letter-spacing: 0.01em;
+}
+
+/* row 4: evolution + base stats sit SIDE-BY-SIDE in two fluid columns */
+.detail-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 24px 0;
+}
+
+/* if only one panel is present (no evolution chain), let it fill the row */
+.detail-cols:has(> :only-child) > .detail-panel {
+  grid-column: 1 / -1;
+}
+
+/* When the evolution row wraps to 2 lines (>3 members), the evolution panel
+   becomes taller than the stats content. The stats box must NOT stretch to
+   match (that used to leave it oversized with empty space); instead it keeps
+   its natural content height and is centered vertically in the row. With a
+   short evolution row this is a no-op (the stats box is the taller panel). */
+.stat-section {
+  align-self: center;
+}
+
+/* shared panel language — Evolution + Base Stats + Type Matchups all use the
+   same card: soft 1px border, 20px radius, a gentle shadow, and a small
+   uppercase "section label" heading prefixed with a red accent dot. */
+.detail-panel {
+  padding: 24px;
+  /* translucent white panel with a sticker frame + hard shadow, so it
+     floats over the type-tinted page wash */
+  background: rgba(255, 253, 248, 0.85);
+  backdrop-filter: blur(6px);
+  border: 2.5px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 5px 6px 0 var(--ink);
+  text-align: center;
+}
+
+
+/* one consistent section heading across the light panels */
+.detail-panel h3,
+.type-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-align: left;
+}
+
+
+.detail-panel h3::before,
+.type-panel h3::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  /* mini sticker pokéball: pop-yellow top, ink band, white bottom */
+  background:
+    linear-gradient(
+      to bottom,
+      var(--pop) 42%,
+      var(--ink) 42%,
+      var(--ink) 58%,
+      var(--surface) 58%
+    );
+  border: 2px solid var(--ink);
+  box-sizing: border-box;
+}
+
+
+.stat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.stat-list li {
+  display: grid;
+  grid-template-columns: 128px 1fr 44px 56px;
+  column-gap: 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 16px;
+}
+
+.stat-list li:last-child {
+  border-bottom: none;
+}
+
+/* #4 — total row under the six stat bars: a summary number in the same
+   styling family (right-aligned, bold) */
+.stat-total {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 14px 0 4px;
+  margin-top: 6px;
+  border-top: 2px solid var(--accent);
+  font-size: 16px;
+}
+
+.stat-total-label {
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--ink-4);
+}
+
+.stat-total-value {
+  font-weight: 900;
+  font-family: monospace;
+  color: var(--accent);
+  font-size: 22px;
+  text-shadow: 2px 2px 0 var(--pop);
+}
+
+
+/* #5 — staggered reveal: each .detail-section fades + rises into place
+   once the data lands (the .revealed class is added on the root
+   .detail-page). Delay is driven by the --reveal-delay custom property
+   set inline on each section. */
+.detail-section {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s ease;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.detail-page.revealed .detail-section {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.stat-name {
+  text-transform: capitalize;
+  color: var(--ink-3);
+}
+
+.stat-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+/* the thin comparison bar between the stat name and the numbers */
+.stat-bar {
+  height: 8px;
+  background: var(--paper-deep);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+
+.stat-bar-fill {
+  height: 100%;
+  /* candy stripe: pop-yellow + accent-red (the "playful" version of the bar) */
+  background: repeating-linear-gradient(
+    45deg,
+    var(--pop) 0 8px,
+    var(--accent) 8px 16px
+  );
+  /* square right edge (no border-radius) so every bar reads as a clean,
+     straight-edged loading bar; the track's rounded corners + overflow
+     still clip the very ends so it stays pill-shaped */
+  /* #6 — the fill width animates from 0 to its value when the section
+     reveals (the value + per-bar delay are set inline in DetailPage.jsx) */
+  transition: width 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+
+/* the level-100 max stat, shown beside the current base value */
+.stat-l100 {
+  text-align: right;
+  color: var(--ink-4);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pokemon-sprite {
+  flex-shrink: 0;
+  background: var(--paper-deep);
+  border-radius: 6px;
+}
+
+.pokemon-id {
+  font-family: monospace;
+  color: var(--ink-4);
+  min-width: 48px;
+}
+
+.pokemon-name {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.search {
+  margin-bottom: 24px;
+}
+
+.search-form {
+  display: flex;
+  gap: 8px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.search-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-button:hover {
+  background: var(--accent-deep);
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* evolution members: larger tiles (the evolution panel is a .detail-panel) */
+/* make the panel a flex column: the h3 stays at the top and the card row
+   (margin: auto) floats to the vertical middle when the panel stretches
+   next to the taller stats section */
+.detail-panel.evolution {
+  display: flex;
+  flex-direction: column;
+}
+
+.evolution-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  /* auto margins push the row to the vertical middle of the panel when the
+     panel stretches next to the taller stats section (the heading stays
+     pinned at the top, cards + arrows sit centered) */
+  margin: auto;
+}
+
+.evolution-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.evolution-arrow {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0 12px;
+  align-self: center;
+}
+
+
+.evolution-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  padding: 16px 20px;
+  min-width: 150px;
+  box-shadow: var(--sticker-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    background 0.15s ease, border-color 0.15s ease;
+}
+
+
+.evolution-link:hover {
+  /* sticker lifts: shadow grows */
+  transform: translateY(-5px);
+  box-shadow: 6px 8px 0 var(--ink);
+}
+
+
+/* the card for the current Pokémon lights up in its primary type color:
+   soft wash background, tinted border, and a colored glow ring. The three
+   --evo-accent* vars are set inline in DetailPage.jsx (TYPE_COLORS). */
+.evolution-link.is-current {
+  /* the current Pokémon keeps its own type-color wash; the sticker frame
+     + glow ring stay */
+  background: var(--evo-accent-soft, var(--paper-deep));
+  border-color: var(--evo-accent, var(--accent));
+  box-shadow:
+    0 0 0 4px var(--evo-accent-glow, rgba(204, 0, 0, 0.25)),
+    4px 5px 0 var(--ink);
+}
+
+
+.evolution-link.is-current .evolution-name {
+  color: var(--evo-accent, var(--accent));
+}
+
+.evolution-link img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
+.evolution-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.evolution-types {
+  font-size: 12px;
+  color: var(--ink-4);
+  text-transform: capitalize;
+}
+
+/* #8 — the dark panel sits between the light sections; a soft gradient
+   bridge above it (from transparent page-grey into the panel color) removes
+   the hard break. The panel itself is a soft charcoal (not pure black). */
+.cards-section {
+  position: relative;
+  margin-top: 20px;
+  border-radius: 22px;
+  /* dark "device" panel: ink gradient + thick sticker frame */
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-deep) 100%);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 7px 0 var(--pop);
+  padding: 24px;
+}
+
+
+/* the light→dark gradient wash sitting just above the panel */
+.cards-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 48px;
+  /* soft ink-to-cream bridge wash above the panel */
+  background: linear-gradient(
+    to bottom,
+    rgba(21, 30, 43, 0) 0%,
+    rgba(21, 30, 43, 0.12) 70%,
+    rgba(21, 30, 43, 0.28) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+
+/* keep the panel's content above the ::before wash */
+.cards-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cards-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+}
+
+.cards-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.cards-header-icon {
+  font-size: 18px;
+}
+
+/* row: [‹] [ prev | CENTER | next ] [›] — exactly 3 cards, none clipped,
+   and the center card sits under the centered title */
+.cards-viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+/* the three slots; the middle is the chosen (emphasized) card. It's
+   direction-aware: on next it glides in from the right, on prev from the
+   left, then settles centered under the title. key={active} re-triggers
+   the animation every navigation. */
+.cards-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  animation: cards-in-next 0.4s ease;
+}
+
+.cards-row[data-dir="1"] {
+  animation-name: cards-in-next;
+}
+
+.cards-row[data-dir="-1"] {
+  animation-name: cards-in-prev;
+}
+
+.cards-slot {
+  flex: 0 0 auto;
+}
+
+/* side slots: a little smaller + dimmed so the chosen card stands out */
+.cards-slot-side .tcg-card-img {
+  width: 220px;
+  opacity: 0.55;
+  filter: grayscale(0.4);
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px rgba(21, 30, 43, 0.4), 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+
+/* empty side slot (no prev/next at the ends of the list) keeps the row
+   symmetric so the center card stays under the title */
+.cards-slot-empty {
+  width: 220px;
+  height: 305px;
+}
+
+.tcg-card-img {
+  width: 220px;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  border: 3px solid transparent;
+}
+
+/* the chosen center card: bigger, full color, and clearly emphasized over
+   the charcoal with a soft lift + ink ring; it keeps the gentle float. */
+.cards-slot-center {
+  position: relative;
+  z-index: 2;
+}
+
+.cards-slot-center .tcg-card-img {
+  width: 320px;
+  border-color: transparent;
+  border-radius: 10px;
+  /* pop the chosen card: an ink sticker ring + a deep drop shadow (the old
+     yellow ring was dropped) */
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 22px 44px rgba(0, 0, 0, 0.5);
+}
+
+/* #14 — the light sweep that runs across the chosen card every few
+   seconds. It's a thin diagonal white band clipped to the card's rounded
+   face, absolutely placed over the center slot and sized to its 320px
+   width (210px on small screens, see the media query below). It only
+   animates transform/opacity on a compositor layer — zero layout or
+   repaint cost. Hidden on the side slots, which stay dimmed */
+.cards-shine {
+  display: none;
+}
+
+.cards-slot-center .cards-shine {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.cards-slot-center .cards-shine::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.42) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-140%) skewX(-18deg);
+  will-change: transform;
+  /* the sweep crosses the card in the first quarter of the cycle, then
+     rests off-screen for the rest — reads as an occasional glint, not a
+     constant shimmer */
+  animation: cards-shine-sweep 4.2s ease-in-out infinite;
+}
+
+@keyframes cards-shine-sweep {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  24% {
+    transform: translateX(360%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(360%) skewX(-18deg);
+  }
+}
+
+
+/* direction-aware entry: the whole 3-card row slides + fades in from the
+   side you're coming from, then lands centered */
+@keyframes cards-in-next {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes cards-in-prev {
+  from {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* arrows flank the window — round, subtle buttons that read as part of the
+   charcoal panel rather than floating rectangles */
+.cards-arrow {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.cards-arrow:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: scale(1.06);
+}
+
+.cards-arrow:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.cards-arrow:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.cards-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.cards-footer-name {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.cards-footer-code {
+  color: var(--pop);
+  font-family: monospace;
+}
+
+.cards-shiny {
+  color: #ffd800;
+  margin-left: 6px;
+}
+
+/* ── Floating type-filter navbar ─────────────────────────────────────
+   A pill bar that lives in normal flow just below the main page card.
+   It stays sticky while you scroll the rest of the page (the type strip
+   + logos track the viewport top) but is dismissed when you reach the
+   Pokémon of the day card at the very top. */
+.type-navbar {
+  position: sticky;
+  /* stuck below the sticky site-navbar bar (≈49px tall) with a small gap */
+  top: 56px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* 90vw wide and centered: a little margin on each side instead of the
+     pill touching both edges */
+  width: 90vw;
+  margin-left: calc(50% - 45vw);
+  /* symmetric padding so the whole row sits on the navbar's vertical
+     center line */
+  padding: 9px 18px;
+  border-radius: 999px;
+  /* sticker language: thick ink outline + hard offset shadow; the bar's
+     own color (type color, or ink when "All") is the sticker's face */
+  border: 2.5px solid var(--ink);
+  box-shadow: 4px 5px 0 var(--ink);
+  transition: top 0.4s ease, background 0.3s ease, color 0.3s ease;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Left + right end zones. Each takes up equal space so the type strip
+   between them sits perfectly centered. The right zone holds the Favorites
+   chip grouped next to the search box — the two read as one pinned-right
+   unit (favorites is always visible, no longer a scrolling pill).
+   Symmetric padding keeps every zone's content on the navbar's vertical
+   center line (same as the centered type strip). */
+.type-navbar-left,
+.type-navbar-right {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  padding: 4px;
+  color: inherit;
+}
+
+/* Left zone = Pokéball logo + the Shiny toggle, sitting side by side.
+   min-width leaves room for both so the centered strip doesn't crowd them. */
+.type-navbar-left {
+  min-width: 150px;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+/* The logo button is the first child of the left zone; keep its own reset. */
+.type-navbar-logo {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  color: inherit;
+  min-width: 44px;
+  justify-content: flex-start;
+  cursor: pointer;
+  border: none;
+}
+
+.type-navbar-right {
+  min-width: 130px;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.type-navbar-search {
+  /* no position here on purpose: leaving it unpositioned lets the floating
+     .navbar-search-panel resolve against the sticky .type-navbar (its
+     nearest positioned ancestor), so it hangs just below the whole bar */
+  display: inline-flex;
+  align-items: center;
+}
+
+.type-navbar-logo svg {
+  width: 30px;
+  height: 30px;
+}
+
+.type-navbar-search svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Middle group: the type filters, centered between the two end zones.
+   Caps at ~9 visible pills (max-width) so the rest stay in the horizontal
+   scroll. Symmetric padding (4px top + 4px bottom) keeps the pills
+   perfectly centered on the navbar's vertical midline — exactly like the
+   logo and the right group — while the bottom 4px gives the 1px scrollbar
+   room to sit low without lifting the text. */
+.type-navbar-types {
+  flex: 0 1 auto;
+  max-width: 560px;
+  min-width: 0;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Firefox: a 1px-ish thin scrollbar (browser-defined, can't force a fixed
+     px) */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.55) transparent;
+}
+
+/* Chrome / Edge / Safari: a 1px-tall bar pinned to the strip's bottom
+   edge (the space between the pills and the bar's lower rim) */
+.type-navbar-types::-webkit-scrollbar {
+  height: 1px;
+}
+
+.type-navbar-types::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.type-navbar-types::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 1px;
+}
+
+.type-navbar-types::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.type-pill {
+  flex: 0 0 auto;
+  padding: 7px 15px;
+  /* transparent border reserves the space the active sticker uses, so
+     activating a pill never shifts its neighbors */
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  opacity: 0.85;
+  white-space: nowrap;
+  transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.type-pill:hover {
+  opacity: 1;
+  transform: scale(1.03);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* The chosen type reads in the navbar's own color (its complement).
+   A translucent white backing keeps it readable whether the bar is a
+   light type color (dark pill text) or a dark type color (light text). */
+.type-pill.active {
+  opacity: 1;
+  /* white sticker pill (ink outline + hard shadow) over the type-colored
+     bar — readable on any type color. The pill's text is pinned to ink:
+     it can't inherit the bar's text color, because the pill's face is
+     always white (white text on white = invisible on dark type bars). */
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--ink);
+  box-shadow: 2px 3px 0 var(--ink);
+}
+
+/* ── Pokémon grid (square cards) ─────────────────────────────────────
+   Replaces the old vertical list. Square cards, each showing:
+   sprite → name → dex id → type badges.
+   The section goes full-bleed (whole viewport) and the column count
+   scales with the screen: 2 on phones → 6 at normal desktop → 8 on
+   wide monitors, so the cards stay roughly the same physical size. */
+.pokemon-grid-section {
+  /* full-bleed: stretch across the entire viewport, not the 480px column */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: 0 64px;
+}
+
+.pokemon-grid {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* small phones */
+  gap: 12px;
+}
+
+/* Responsive column counts (card ≈ 200px square at every breakpoint) */
+@media (min-width: 600px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 800px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (min-width: 1600px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+/* small screens: stack the detail hero vertically (art above the data) */
+@media (max-width: 640px) {
+  .site-navbar {
+    padding: 8px 20px;
+  }
+
+  .site-navbar-wordmark {
+    display: none;
+  }
+
+  .site-nav-btn {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+
+  .detail-hero {
+    padding: 14px 16px 20px;
+  }
+
+  /* the three-zone hero collapses to one column: art on top, data +
+     description stacked below, all centered */
+  .detail-hero-body {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    justify-items: center;
+  }
+
+  .detail-hero .detail-art {
+    justify-self: center;
+  }
+
+  .detail-art img {
+    width: 180px;
+    height: 180px;
+  }
+
+  .detail-info {
+    align-items: center;
+    text-align: center;
+  }
+
+  /* when the hero stacks, the description card stretches full-width and its
+     text re-centers under the rest of the content */
+  .detail-description-card {
+    width: 100%;
+    justify-self: stretch;
+    text-align: center;
+  }
+
+  .detail-description {
+    margin: 0 auto;
+  }
+
+  .profile-nav {
+    max-width: 100%;
+    justify-content: space-between;
+  }
+
+  .profile-nav-button {
+    min-width: 0;
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+  /* stack evolution + stats vertically on small screens */
+  .detail-cols {
+    grid-template-columns: 1fr;
+  }
+
+  /* single-column type matchups so the pills don't get cramped */
+  .type-panel-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* TCG carousel: the 320px center card overflows small screens, so drop
+     it to a size that fits alongside the two side cards */
+  .cards-slot-side .tcg-card-img,
+  .cards-slot-empty {
+    width: 150px;
+  }
+
+  .cards-slot-side .tcg-card-img {
+    height: auto;
+  }
+
+  .cards-slot-center .tcg-card-img {
+    width: 210px;
+  }
+
+  /* tighten the charcoal panel's inner gutters */
+  .cards-section {
+    padding: 20px 16px;
+  }
+}
+
+.pokemon-grid-item {
+  min-width: 0;
+}
+
+.pokemon-card {
+  position: relative;
+  display: flex;
+  perspective: 1200px; /* depth for the hover flip (#7) */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 1 / 1;
+  /* sticker card: white face, thick ink outline, hard offset shadow */
+  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  padding: 14px 12px;
+  box-shadow: var(--sticker-shadow);
+  text-decoration: none;
+  color: inherit;
+  /* scroll reveal: cards start hidden and rise into place the moment
+     they scroll into view (the .pokemon-card-visible class is added by
+     the IntersectionObserver in PokemonList). transform/box-shadow use a
+     faster 0.3s so the hover float-up feels snappy */
+  opacity: 0;
+  /* card box is 2% smaller than the grid cell (visual only — layout and
+     the grid gap are unchanged); keeps the reveal lift intact */
+  transform: translateY(14px) scale(0.98);
+  transition: opacity 0.5s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pokemon-card.pokemon-card-visible {
+  opacity: 1;
+  /* keep the 2% shrink on the settled (visible) state */
+  transform: translateY(0) scale(0.98);
+}
+
+/* hover: the card lifts up slightly and scales up a touch (3% over the
+   2%-shrunk base, so it still reads as "a bit bigger"), with a deeper
+   shadow so it looks like it's floating above the page */
+.pokemon-card:hover {
+  /* bouncy lift: the sticker rises off the page and its hard shadow
+     grows (reads as it catching light from above) */
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 6px 8px 0 var(--ink);
+}
+
+/* #dir3 — "stuck-on" stagger: cards alternate a slight tilt in the grid
+   (odd lean left, even lean right) so the grid reads like stickers
+   pasted on a page. Only applies once the card has revealed
+   (.pokemon-card-visible), so the hidden/offset scroll-reveal state is
+   untouched. On hover the card snaps upright (rotate 0) while it lifts —
+   the higher-specificity hover rules below override the tilt. */
+.pokemon-grid-item:nth-child(odd) .pokemon-card.pokemon-card-visible {
+  transform: translateY(0) scale(0.98) rotate(-1.2deg);
+}
+
+.pokemon-grid-item:nth-child(even) .pokemon-card.pokemon-card-visible {
+  transform: translateY(0) scale(0.98) rotate(1.2deg);
+}
+
+.pokemon-grid-item:nth-child(odd) .pokemon-card.pokemon-card-visible:hover,
+.pokemon-grid-item:nth-child(even) .pokemon-card.pokemon-card-visible:hover {
+  /* snap upright + bouncy lift (same values as the base hover) */
+  transform: translateY(-8px) scale(1.01);
+}
+
+/* #7 — hover flip: the card box stays put (lift + shadow are on the box),
+   the .pokemon-card-flip wrapper rotates 180° on Y; each face is a full
+   overlay with backface-visibility:hidden so only the "up" face shows */
+.pokemon-card-flip {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* hover-flip only for real pointer devices (desktop / mouse). On
+   touch devices there's no hover, so the .pokemon-card-flipped class
+   (added by a tap) drives the flip instead — see PokemonList's onClick. */
+@media (hover: hover) {
+  .pokemon-card:hover .pokemon-card-flip {
+    transform: rotateY(180deg);
+  }
+}
+
+/* #7 (touch) — tap-to-flip: toggled on by the first tap on a card */
+.pokemon-card-flipped .pokemon-card-flip {
+  transform: rotateY(180deg);
+}
+
+.pokemon-card-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 12px;
+  background: var(--surface);
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.pokemon-card-back {
+  transform: rotateY(180deg);
+  gap: 8px;
+}
+
+/* content wrapper keeps the pre-flip "slightly enlarged" look on both
+   faces (transform doesn't affect layout, so the card box is unchanged) */
+.pokemon-card-inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transform: scale(1.15);
+}
+
+/* back face: name + larger type pills + the TCG card count */
+.pokemon-card-back-name {
+  font-weight: 800;
+  font-size: 15px;
+  text-transform: capitalize;
+}
+
+.pokemon-card-back-types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+
+.pokemon-card-back-types .pokemon-card-type {
+  font-size: 12px;
+  padding: 3px 10px;
+}
+
+.pokemon-card-back-tcg {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-4);
+}
+
+.pokemon-card-back-tcg .tcg-count {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--accent);
+}
+
+.pokemon-card-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pokemon-card-art img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.pokemon-card-name {
+  font-weight: 800;
+  font-size: 15px;
+  text-transform: capitalize;
+  text-align: center;
+}
+
+.pokemon-card-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--ink-4);
+}
+
+.pokemon-card-types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pokemon-card-type {
+  /* sticker badge: type-color face + ink outline + tiny hard shadow */
+  padding: 2px 8px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 1.5px 2px 0 var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.pokemon-card-type.pending {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--ink-4);
+}
+
+/* ── Navbar search (right end of the type-filter bar) ────────────────
+   The magnifying glass button stays in the bar. Clicking it opens a
+   separate white "window" (input + results) that hangs just below the
+   navbar, right-aligned to it. Clicking outside the window closes it. */
+.navbar-search {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.navbar-search-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  padding: 2px;
+}
+
+.navbar-search-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* The floating search window. .navbar-search is not positioned, so this
+   anchors to the sticky navbar: top:100% = just under the bar's bottom
+   edge, right:0 = flush with the bar's right edge. */
+.navbar-search-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(280px, 100%);
+  padding: 10px;
+  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 4px 5px 0 var(--ink);
+  z-index: 200;
+  animation: navbar-search-in 0.15s ease;
+}
+
+
+@keyframes navbar-search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-search-form {
+  display: flex;
+}
+
+.navbar-search-form input {
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+}
+
+.navbar-search-form input:focus {
+  border-color: var(--ink-4);
+}
+
+.navbar-search-form input::placeholder {
+  color: var(--ink-4);
+  font-weight: 400;
+}
+
+.navbar-search-empty {
+  margin: 10px 4px 4px;
+  font-size: 13px;
+  color: var(--ink-4);
+}
+
+.navbar-search-results {
+  margin: 6px 0 0;
+  padding: 4px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navbar-search-results li button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+}
+
+.navbar-search-results li button:hover {
+  background: var(--paper-deep);
+}
+
+.navbar-search-results img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--paper-deep);
+  object-fit: contain;
+}
+
+.navbar-search-name {
+  font-weight: 700;
+  flex: 1;
+  text-align: left;
+  text-transform: capitalize;
+}
+
+.navbar-search-id {
+  font-family: monospace;
+  color: var(--ink-4);
+  font-size: 12px;
+}
+
+/* ── New UI pieces ───────────────────────────────────────────────── */
+
+/* #2 — spinning grey Pokéball loader (list + TCG section) */
+@keyframes pokeball-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.pokeball-spinner svg {
+  animation: pokeball-spin 1.6s linear infinite;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.18));
+}
+
+/* the loading grid replaces a bare "Loading…" line; a single centered
+   spinner sits in a card-sized square so layout doesn't jump on swap */
+.grid-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 56px 0;
+  font-size: 15px;
+  color: var(--ink-4);
+}
+
+/* shared "spinning grey Pokéball" loading block — the main card
+   (Pokémon of the day) and the detail page use the same one, so every
+   loading state on the site is a grey ball */
+.pod-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 320px;
+  padding: 40px 0;
+  font-size: 15px;
+  color: var(--ink-4);
+}
+
+/* #1 — empty state panel (shown when a type or favorites filter has no
+   matches). Centered card with a small pokeball + a clear button */
+.pokemon-grid-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+}
+
+.grid-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: var(--sticker-shadow);
+  padding: 40px 48px;
+  font-size: 15px;
+  color: var(--ink-3);
+  text-align: center;
+  max-width: 480px;
+}
+
+
+.grid-empty-clear {
+  margin-top: 4px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 8px 18px;
+  cursor: pointer;
+  box-shadow: var(--sticker-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+
+.grid-empty-clear:hover {
+  transform: translate(2px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+
+/* #3 — heart toggle on each grid card. Rendered as a small round white chip
+   (border + shadow) so it's clearly findable in the top-right corner; the
+   "off" heart is a visible grey, the "on" heart is the site red. */
+.card-heart {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3; /* above the two flip faces (they're absolute siblings too) */
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* sticker chip: ink outline + hard shadow */
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 2px 3px 0 var(--ink);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.card-heart:hover {
+  transform: scale(1.12);
+  box-shadow: 4px 5px 0 var(--ink);
+  background: var(--surface);
+}
+
+/* press-in: the chip squashes slightly while held */
+.card-heart:active {
+  transform: scale(0.88);
+}
+
+.card-heart svg {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* favorited: the heart pops with a springy overshoot */
+.card-heart-active svg {
+  animation: heart-pop 0.35s ease;
+}
+
+@keyframes heart-pop {
+  0%   { transform: scale(0.7); }
+  55%  { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* #3 — on favoriting, a small burst of red dots radiates out from the chip.
+   The dots live in a centered overlay; they only animate while the button
+   has .card-heart-active (the moment you ADD a favorite). */
+.card-heart-burst {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.card-heart-burst i {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+}
+
+.card-heart-active .card-heart-burst i {
+  animation: heart-burst 0.55s ease-out;
+}
+
+/* 6 directions around the chip */
+.card-heart-burst i:nth-child(1) { --dx: 0px;   --dy: -15px; }
+.card-heart-burst i:nth-child(2) { --dx: 13px;  --dy: -7px;  }
+.card-heart-burst i:nth-child(3) { --dx: 13px;  --dy: 8px;   }
+.card-heart-burst i:nth-child(4) { --dx: 0px;   --dy: 15px;  }
+.card-heart-burst i:nth-child(5) { --dx: -13px; --dy: 8px;   }
+.card-heart-burst i:nth-child(6) { --dx: -13px; --dy: -7px;  }
+
+@keyframes heart-burst {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.3); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.1); }
+}
+
+/* #3 — "Favorites" filter chip in the navbar (same shape as type pills).
+   Now lives in the right group, next to the search box (always visible). */
+.type-pill-favorites {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+/* #shiny — "Shiny mode" toggle on the dark type bar (same pill shape as the
+   type pills). The off state inherits the bar's colors just like the type
+   pills; the on state is a pop-yellow sticker (ink text + hard shadow) so
+   it's unambiguously "on" on any bar color. */
+.type-pill-shiny {
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.type-pill-shiny .shiny-glyph {
+  font-size: 12px;
+}
+.type-pill-shiny-on {
+  opacity: 1;
+  color: var(--ink);
+  background: var(--pop);
+  border-color: var(--ink);
+  box-shadow: 2px 3px 0 var(--ink);
+}
+/* keep the "on" pop-yellow sticker on hover (the base .type-pill:hover
+   would otherwise wash it to translucent white) */
+.type-pill-shiny-on:hover {
+  background: var(--pop);
+  color: var(--ink);
+}
+
+/* heart icon size — small enough to sit inside the pill next to the text */
+.type-pill-favorites svg {
+  flex: 0 0 auto;
+}
+
+/* very narrow screens: the "Favorites" text would crowd the right group,
+   so it collapses to just the heart (the button's aria-label still names
+   it). The right zone also drops its min-width so the type strip gets
+   more room on phones. */
+@media (max-width: 560px) {
+  .type-pill-favorites .favorites-label {
+    display: none;
+  }
+
+  .type-pill-favorites {
+    padding: 7px 11px;
+  }
+
+  .type-navbar-right {
+    min-width: 0;
+  }
+}
+
+/* #7 — "Weak / Resists / Immune" panel: same card language as .detail-panel
+   (soft 1px border, 20px radius, gentle shadow, red-dot section label) */
+.type-panel {
+  margin: 24px 0 0;
+  padding: 24px;
+  background: rgba(255, 253, 248, 0.85);
+  backdrop-filter: blur(6px);
+  border: 2.5px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 5px 6px 0 var(--ink);
+}
+
+
+.type-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+}
+
+.type-panel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.type-panel-col h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.type-panel-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.type-panel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  /* sticker badge: type-color face + ink outline + tiny hard shadow */
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 1.5px 2px 0 var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+
+.type-panel-pill .mult {
+  font-family: monospace;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+/* "No immunities / —" placeholder when a column is empty */
+.type-panel-none {
+  font-size: 13px;
+  color: var(--ink-4);
+  font-style: italic;
+}
+
+/* the immune row spans both columns (it's usually short or empty) */
+.type-panel-col-wide {
+  grid-column: 1 / -1;
+}
+
+/* #8 — abilities pills, now inside the type-tinted hero: translucent white
+   chips so they read against the tint (like the measurement chips) */
+.detail-abilities {
+  margin: 12px 0 0;
+}
+
+.detail-abilities-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(0, 0, 0, 0.55);
+  margin-bottom: 6px;
+}
+
+.detail-abilities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.detail-ability-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.92);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+
+/* #6 — TCG carousel position indicator ("X of N"), read against charcoal */
+.cards-position {
+  text-align: center;
+  font-size: 12px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 14px;
+  letter-spacing: 0.04em;
+}
+
+/* #2 — TCG cards loading state (spinning grey Pokéball) */
+.cards-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 0;
+  font-size: 14px;
+  color: #aaa;
+}
+
+/* #12 — 404 page: a friendly "lost" screen, not a blank */
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 80px 32px;
+  text-align: center;
+}
+
+.not-found-title {
+  font-size: 56px;
+  font-weight: 900;
+  color: var(--accent);
+  margin: 0;
+  /* a big sticker pop for the 404 */
+  text-shadow: 4px 4px 0 var(--pop);
+}
+
+
+.not-found-sub {
+  font-size: 18px;
+  color: var(--ink-4);
+  margin: 0;
+  max-width: 420px;
+}
+
+.not-found-button {
+  margin-top: 8px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 12px 28px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--sticker-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+
+.not-found-button:hover {
+  transform: translate(2px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+
+/* #13 — global :focus-visible outlines for keyboard navigation */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* #5 — toast: a small pill that slides up from the bottom center when a
+   toast() message is posted (see Toast.jsx). Hidden by default; the
+   .toast-visible class is toggled by the component for ~2s. */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 16px);
+  background: var(--ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border: 2px solid var(--pop);
+  border-radius: 999px;
+  box-shadow: 0 6px 0 rgba(21, 30, 43, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 100;
+  max-width: min(90vw, 340px);
+  text-align: center;
+}
+
+
+.toast.toast-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* E — quiet closing footer (see Footer.jsx): a small grey Pokéball between
+   two hairlines + one caption, centered at the end of the list page so
+   scrolling down doesn't end in a grey void. */
+.site-footer {
+  text-align: center;
+  padding: 48px 0 44px;
+}
+
+.site-footer-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.site-footer-line {
+  width: 72px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.site-footer-caption {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+/* Detail page: the closing footer is pinned to the very bottom of the page.
+   .detail-page is a flex column at min-height 100vh - 8px, so the footer's
+   margin-top:auto absorbs all leftover space and drops it to the bottom
+   edge. The footer's own 44px bottom padding is trimmed to 0 so only the
+   page's 40px bottom padding sits below the caption. */
+.detail-page > .site-footer {
+  margin-top: auto;
+  padding-bottom: 0;
+}
+
+/* users who prefer reduced motion: every animation/transition collapses
+   to instant (the scroll-reveal cards simply appear instead of rising up),
+   and programmatic/anchor scrolling stops gliding */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

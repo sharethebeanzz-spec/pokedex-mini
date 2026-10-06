@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card preview — pokedex-mini</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #f5f5f5;
+  color: #222;
+  overflow-x: hidden;
+}
+.app { max-width: 480px; margin: 0 auto; padding: 32px 16px; }
+.note {
+  max-width: 480px; margin: 0 auto 8px; padding: 0 16px;
+  font-size: 13px; color: #777;
+}
+/* === exact CSS copied from src/index.css (grid + cards) === */
+/* ── Pokémon grid (square cards) ─────────────────────────────────────
+   Replaces the old vertical list. Square cards, each showing:
+   sprite → name → dex id → type badges.
+   The section goes full-bleed (whole viewport) and the column count
+   scales with the screen: 2 on phones → 6 at normal desktop → 8 on
+   wide monitors, so the cards stay roughly the same physical size. */
+.pokemon-grid-section {
+  /* full-bleed: stretch across the entire viewport, not the 480px column */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: 0 16px;
+}
+
+.pokemon-grid {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* small phones */
+  gap: 12px;
+}
+
+/* Responsive column counts (card ≈ 200px square at every breakpoint) */
+@media (min-width: 600px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 800px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (min-width: 1600px) {
+  .pokemon-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+.pokemon-grid-item {
+  min-width: 0;
+}
+
+.pokemon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 1 / 1;
+  background: white;
+  border-radius: 12px;
+  padding: 14px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+  color: inherit;
+}
+
+.pokemon-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+.pokemon-card-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pokemon-card-art img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.pokemon-card-name {
+  font-weight: 700;
+  font-size: 15px;
+  text-transform: capitalize;
+  text-align: center;
+}
+
+.pokemon-card-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #999;
+}
+
+.pokemon-card-types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pokemon-card-type {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pokemon-card-type.pending {
+  background: transparent;
+  color: #bbb;
+}
+</style>
+</head>
+<body>
+  <div class="app"><p class="note">Static preview of the card grid (same markup + CSS as the site). It's not connected to the API or the hero card/navbar. Resize the window to see 2/3/4/5/6/8 columns kick in.</p></div>
+  <section class="pokemon-grid-section">
+    <ul class="pokemon-grid">
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="Bulbasaur" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Bulbasaur</span>
+            <span class="pokemon-card-id">#0001</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#78C850;color:#222">Grass</span><span class="pokemon-card-type" style="background:#A040A0;color:#fff">Poison</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png" alt="Ivysaur" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Ivysaur</span>
+            <span class="pokemon-card-id">#0002</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#78C850;color:#222">Grass</span><span class="pokemon-card-type" style="background:#A040A0;color:#fff">Poison</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png" alt="Venusaur" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Venusaur</span>
+            <span class="pokemon-card-id">#0003</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#78C850;color:#222">Grass</span><span class="pokemon-card-type" style="background:#A040A0;color:#fff">Poison</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="Charmander" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Charmander</span>
+            <span class="pokemon-card-id">#0004</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#F08030;color:#fff">Fire</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png" alt="Charmeleon" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Charmeleon</span>
+            <span class="pokemon-card-id">#0005</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#F08030;color:#fff">Fire</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt="Charizard" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Charizard</span>
+            <span class="pokemon-card-id">#0006</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#F08030;color:#fff">Fire</span><span class="pokemon-card-type" style="background:#A890F0;color:#fff">Flying</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="Squirtle" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Squirtle</span>
+            <span class="pokemon-card-id">#0007</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#6890F0;color:#fff">Water</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png" alt="Wartortle" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Wartortle</span>
+            <span class="pokemon-card-id">#0008</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#6890F0;color:#fff">Water</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png" alt="Blastoise" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Blastoise</span>
+            <span class="pokemon-card-id">#0009</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#6890F0;color:#fff">Water</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png" alt="Caterpie" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Caterpie</span>
+            <span class="pokemon-card-id">#0010</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#A8B820;color:#222">Bug</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/11.png" alt="Metapod" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Metapod</span>
+            <span class="pokemon-card-id">#0011</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#A8B820;color:#222">Bug</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/12.png" alt="Butterfree" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Butterfree</span>
+            <span class="pokemon-card-id">#0012</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#A8B820;color:#222">Bug</span><span class="pokemon-card-type" style="background:#A890F0;color:#fff">Flying</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png" alt="Weedle" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Weedle</span>
+            <span class="pokemon-card-id">#0013</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#A8B820;color:#222">Bug</span><span class="pokemon-card-type" style="background:#A040A0;color:#fff">Poison</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/14.png" alt="Kakuna" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Kakuna</span>
+            <span class="pokemon-card-id">#0014</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#A8B820;color:#222">Bug</span><span class="pokemon-card-type" style="background:#A040A0;color:#fff">Poison</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/15.png" alt="Beedrill" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Beedrill</span>
+            <span class="pokemon-card-id">#0015</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#A8B820;color:#222">Bug</span><span class="pokemon-card-type" style="background:#A040A0;color:#fff">Poison</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png" alt="Pidgey" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Pidgey</span>
+            <span class="pokemon-card-id">#0016</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#9D9D9D;color:#222">Normal</span><span class="pokemon-card-type" style="background:#A890F0;color:#fff">Flying</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/17.png" alt="Rattata" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Rattata</span>
+            <span class="pokemon-card-id">#0017</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#9D9D9D;color:#222">Normal</span>
+            </div>
+          </a>
+        </li>
+        <li class="pokemon-grid-item">
+          <a class="pokemon-card" href="#">
+            <div class="pokemon-card-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/18.png" alt="Spearow" width="96" height="96">
+            </div>
+            <span class="pokemon-card-name">Spearow</span>
+            <span class="pokemon-card-id">#0018</span>
+            <div class="pokemon-card-types">
+              <span class="pokemon-card-type" style="background:#9D9D9D;color:#222">Normal</span><span class="pokemon-card-type" style="background:#A890F0;color:#fff">Flying</span>
+            </div>
+          </a>
+        </li>
+    </ul>
+  </section>
+</body>
+</html>

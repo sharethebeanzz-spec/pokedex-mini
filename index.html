@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pokedex-mini</title>
+    <style>
+      /* #11 — branded boot splash. It lives inside #root, so the moment
+         React mounts its first render it replaces #root's contents and the
+         splash disappears on its own (no extra JS). Styled inline here so
+         it paints immediately, before the app's CSS bundle finishes loading
+         — that's what kills the blank flash. */
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #fdf4dc;
+        z-index: 9999;
+      }
+      #boot-splash svg {
+        animation: boot-splash-pulse 1.6s ease-in-out infinite;
+      }
+      #boot-splash span {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #5b6b7c;
+      }
+      @keyframes boot-splash-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.06);
+          opacity: 0.85;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot-splash">
+        <!-- red-and-white Pokéball, same artwork as the in-app spinner -->
+        <svg viewBox="0 0 100 100" width="72" height="72" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" fill="#FFFDF8" />
+          <path d="M8 50 a42 42 0 0 1 84 0 Z" fill="#E33B2E" />
+          <rect x="8" y="45" width="84" height="10" fill="#151e2b" />
+          <circle cx="50" cy="50" r="13" fill="#FFD800" />
+          <circle cx="50" cy="50" r="8" fill="#fffdf8" />
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#151e2b" strokeWidth="5" />
+        </svg>
+        <span>Pokédex Mini</span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

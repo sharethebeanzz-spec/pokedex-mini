@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pokédex Mini — 3 design directions (preview)</title>
+<style>
+/* =====================================================================
+   Static design-direction preview for pokedex-mini.
+   3 sections, each themed with its own CSS block:
+     #dir-refined  — Refined design system
+     #dir-glass    — Bold modern glass + depth
+     #dir-playful  — Playful / franchise-true
+   Markup in each section mirrors the real app (Pikachu POD card,
+   type-filter bar, card grid, detail hero, stats, TCG panel).
+   Images: real jsDelivr sprite CDN + real TCGdex card asset.
+   This file is a mockup only — not wired to the app.
+===================================================================== */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #efeae0;
+  color: #151e2b;
+}
+
+/* ── direction picker (sticky) ─────────────────────────────────────── */
+.dir-picker {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 16px;
+  background: #151e2b; color: #fff;
+}
+.dir-picker button {
+  border: 1px solid rgba(255,255,255,.25);
+  background: transparent; color: #fff;
+  font: 700 13px/1 system-ui;
+  padding: 10px 16px; border-radius: 999px; cursor: pointer;
+}
+.dir-picker button:hover { background: rgba(255,255,255,.1); }
+.dir-picker .hint { font-size: 11px; opacity: .6; margin-left: 8px; }
+
+.dir {
+  max-width: 1100px;
+  margin: 48px auto;
+  padding: 0 24px;
+}
+.dir-intro { margin: 0 0 28px; }
+.dir-intro h1 { font-size: 26px; margin: 0 0 6px; }
+.dir-intro p { margin: 0; font-size: 15px; opacity: .75; max-width: 720px; }
+.dir-tag {
+  display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .12em;
+  text-transform: uppercase; padding: 5px 12px; border-radius: 999px;
+  background: rgba(0,0,0,.06); margin-bottom: 10px;
+}
+.page-divider {
+  display: flex; align-items: center; gap: 14px; margin: 40px 0 20px;
+  font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .5;
+}
+.page-divider::before, .page-divider::after { content: ""; flex: 1; height: 1px; background: currentColor; opacity: .35; }
+
+/* shared demo components (overridden per direction) */
+.demo-app { position: relative; }
+.hero-card, .filter-bar, .card-grid, .detail-hero, .panel { position: relative; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   DIRECTION 1 — REFINED DESIGN SYSTEM
+   Keep layout; premium polish: tighter spacing/radius/shadow scale,
+   stronger hero (accent bar + glow), ambient layered background,
+   consistent card language everywhere.
+────────────────────────────────────────────────────────────────────── */
+#dir-refined {
+  background:
+    radial-gradient(900px 420px at 18% -4%, rgba(104,144,240,.10), transparent 60%),
+    radial-gradient(760px 400px at 92% 2%, rgba(240,128,48,.08), transparent 55%),
+    radial-gradient(circle at 1px 1px, rgba(21,30,43,.03) 1px, transparent 1.4px),
+    #f7f4ec;
+  background-size: auto, auto, 24px 24px, auto;
+  padding: 24px;
+  min-height: 60vh;
+}
+#dir-refined .hero-card {
+  display: grid;
+  grid-template-columns: 1.1fr 300px;
+  align-items: center; gap: 12px;
+  background: linear-gradient(150deg, #4d74e8 0%, #233a8f 68%, #14204f 100%);
+  color: #fff;
+  border-radius: 22px;
+  padding: 26px 30px;
+  box-shadow: 0 18px 44px -18px rgba(35,58,143,.55);
+  overflow: hidden;
+}
+#dir-refined .hero-card::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(130% 80% at 18% 0%, rgba(255,255,255,.14), transparent 45%),
+    radial-gradient(340px circle at 82% 46%, rgba(255,255,255,.12), transparent 70%);
+  pointer-events: none;
+}
+#dir-refined .hero-info { position: relative; z-index: 1; }
+#dir-refined .hero-kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255,255,255,.75); margin: 0 0 10px;
+}
+#dir-refined .hero-kicker::before {
+  content: ""; width: 18px; height: 2px; background: #ffd800; border-radius: 2px;
+}
+#dir-refined .hero-name { font-size: 44px; font-weight: 800; letter-spacing: -.02em; margin: 0; line-height: 1; }
+#dir-refined .hero-name small { font-size: 20px; font-weight: 600; color: rgba(255,255,255,.6); font-family: ui-monospace, monospace; margin-left: 10px; letter-spacing: 0; }
+#dir-refined .hero-desc { font-size: 14px; line-height: 1.55; color: rgba(255,255,255,.82); margin: 12px 0 18px; max-width: 46ch; }
+#dir-refined .hero-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #fff; color: #1d2f7a; font-weight: 800; font-size: 14px;
+  padding: 11px 20px; border-radius: 10px; text-decoration: none;
+  box-shadow: 0 6px 16px -6px rgba(0,0,0,.4);
+}
+#dir-refined .hero-art {
+  position: relative; z-index: 1;
+  display: grid; place-items: center;
+}
+#dir-refined .hero-art img {
+  width: 280px; height: 280px; object-fit: contain;
+  filter: drop-shadow(0 20px 24px rgba(10,20,60,.5));
+  animation: float-soft 4s ease-in-out infinite;
+}
+@keyframes float-soft { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+/* type badges (shared shape, refined style) */
+.tbadge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 800; text-transform: lowercase;
+  padding: 4px 12px 4px 5px; border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.tbadge .dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+
+/* filter bar */
+#dir-refined .filter-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,253,248,.85);
+  border: 1px solid rgba(21,30,43,.08);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  padding: 10px 14px; margin: 18px 0;
+  box-shadow: 0 4px 18px -8px rgba(21,30,43,.18);
+  overflow-x: auto;
+}
+#dir-refined .fpill {
+  border: none; background: transparent; color: #3a4658;
+  font: 700 13px system-ui; padding: 7px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+}
+#dir-refined .fpill:hover { background: rgba(21,30,43,.06); }
+#dir-refined .fpill.on { background: #151e2b; color: #fff; }
+
+/* card grid */
+#dir-refined .card-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+#dir-refined .pcard {
+  background: #fffdf8;
+  border: 1px solid rgba(21,30,43,.07);
+  border-radius: 16px;
+  padding: 14px;
+  display: grid; grid-template-rows: auto 1fr auto; gap: 6px;
+  text-decoration: none; color: inherit;
+  box-shadow: 0 1px 2px rgba(21,30,43,.05);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+#dir-refined .pcard:hover { transform: translateY(-4px); box-shadow: 0 14px 28px -12px rgba(21,30,43,.25); }
+#dir-refined .pcard img { width: 76px; height: 76px; object-fit: contain; justify-self: center; }
+#dir-refined .pcard .pname { font-weight: 800; font-size: 15px; text-transform: capitalize; text-align: center; }
+#dir-refined .pcard .pid { font: 600 11px ui-monospace, monospace; color: #8794a3; text-align: center; }
+#dir-refined .pcard .ptypes { display: flex; justify-content: center; gap: 5px; }
+
+/* detail page */
+#dir-refined .detail-hero {
+  border-radius: 24px;
+  background: linear-gradient(170deg, rgba(104,144,240,.22), rgba(104,144,240,.06) 60%, transparent);
+  border: 1px solid rgba(104,144,240,.25);
+  padding: 24px;
+  display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: center;
+}
+#dir-refined .detail-hero img { width: 200px; height: 200px; object-fit: contain; filter: drop-shadow(0 16px 20px rgba(30,50,120,.28)); }
+#dir-refined .panel {
+  background: #fffdf8;
+  border: 1px solid rgba(21,30,43,.08);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(21,30,43,.05);
+}
+#dir-refined .panel h3 {
+  font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  margin: 0 0 14px; color: #151e2b;
+  display: flex; align-items: center; gap: 8px;
+}
+#dir-refined .panel h3::before {
+  content: ""; width: 12px; height: 12px; border-radius: 50%;
+  background: linear-gradient(#4d74e8 50%, #151e2b 50%);
+}
+#dir-refined .stat-row { display: grid; grid-template-columns: 90px 1fr 40px; gap: 12px; align-items: center; font-size: 14px; padding: 7px 0; }
+#dir-refined .stat-row .bar { height: 7px; background: #efe9da; border-radius: 4px; overflow: hidden; }
+#dir-refined .stat-row .bar i { display: block; height: 100%; background: linear-gradient(90deg, #6890f0, #e33b2e); border-radius: 4px; }
+#dir-refined .evo-row { display: flex; align-items: center; gap: 10px; justify-content: center; padding: 8px 0; }
+#dir-refined .evo {
+  background: #f7f4ec; border: 1px solid rgba(21,30,43,.08); border-radius: 14px;
+  padding: 10px 14px; text-align: center; min-width: 96px;
+}
+#dir-refined .evo img { width: 72px; height: 72px; object-fit: contain; }
+#dir-refined .evo.cur { border-color: #6890f0; box-shadow: 0 0 0 3px rgba(104,144,240,.25); }
+#dir-refined .evo-arrow { font-size: 20px; color: #8794a3; }
+#dir-refined .tcg-panel {
+  background: linear-gradient(180deg, #1b2230, #141824);
+  border-radius: 18px; padding: 20px; color: #fff;
+  display: flex; gap: 16px; align-items: center; justify-content: center;
+  box-shadow: 0 14px 30px -14px rgba(20,24,36,.6);
+}
+#dir-refined .tcg-panel img.side { width: 110px; border-radius: 8px; opacity: .45; filter: grayscale(.4); }
+#dir-refined .tcg-panel img.mid { width: 170px; border-radius: 10px; box-shadow: 0 18px 30px -8px rgba(0,0,0,.55); }
+#dir-refined .tcg-meta { text-align: center; font-size: 12px; color: #aeb8c6; margin-top: 12px; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   DIRECTION 2 — BOLD MODERN GLASS + DEPTH
+   Cool light base, ambient blurred color blobs, glass panels
+   (blur + white translucency), large radii, floating depth.
+────────────────────────────────────────────────────────────────────── */
+#dir-glass {
+  position: relative;
+  background: linear-gradient(160deg, #eef3fb 0%, #e6ecf7 55%, #f3f0fa 100%);
+  padding: 24px; min-height: 60vh; overflow: hidden;
+}
+#dir-glass .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .55; pointer-events: none; }
+#dir-glass .blob.b1 { width: 380px; height: 380px; background: #6890f0; top: -80px; left: -60px; }
+#dir-glass .blob.b2 { width: 320px; height: 320px; background: #f08030; bottom: -60px; right: -40px; opacity: .4; }
+#dir-glass .blob.b3 { width: 260px; height: 260px; background: #78c850; top: 40%; left: 60%; opacity: .3; }
+#dir-glass .glass {
+  background: rgba(255,255,255,.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.7);
+  box-shadow: 0 20px 40px -20px rgba(50,70,130,.35);
+}
+#dir-glass .hero-card {
+  display: grid; grid-template-columns: 1.1fr 300px; gap: 8px; align-items: center;
+  border-radius: 30px; padding: 28px 32px;
+}
+#dir-glass .hero-name { font-size: 46px; font-weight: 900; letter-spacing: -.03em; margin: 0; background: linear-gradient(90deg,#22336e,#3b5bdb); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#dir-glass .hero-kicker { font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #5a6f9e; margin: 0 0 10px; }
+#dir-glass .hero-desc { font-size: 14px; line-height: 1.6; color: #55617d; margin: 12px 0 18px; max-width: 44ch; }
+#dir-glass .hero-cta {
+  display: inline-flex; background: linear-gradient(90deg,#3b5bdb,#6890f0); color: #fff;
+  font-weight: 800; font-size: 14px; padding: 12px 22px; border-radius: 999px; text-decoration: none;
+  box-shadow: 0 10px 24px -8px rgba(59,91,219,.7);
+}
+#dir-glass .hero-art img { width: 270px; height: 270px; object-fit: contain; filter: drop-shadow(0 24px 30px rgba(59,91,219,.35)); }
+#dir-glass .filter-bar { border-radius: 999px; padding: 8px 10px; margin: 16px 0; }
+#dir-glass .fpill {
+  border: none; background: transparent; color: #3a4a75; font: 700 13px system-ui;
+  padding: 8px 15px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+}
+#dir-glass .fpill.on { background: #22336e; color: #fff; box-shadow: 0 6px 14px -6px rgba(34,51,110,.6); }
+#dir-glass .card-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+#dir-glass .pcard {
+  border-radius: 24px; padding: 16px; text-decoration: none; color: inherit;
+  display: grid; grid-template-rows: auto 1fr auto; gap: 6px;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+#dir-glass .pcard:hover { transform: translateY(-6px) scale(1.015); box-shadow: 0 26px 44px -18px rgba(50,70,130,.45); }
+#dir-glass .pcard img { width: 78px; height: 78px; object-fit: contain; justify-self: center; }
+#dir-glass .pcard .pname { font-weight: 800; font-size: 15px; text-transform: capitalize; text-align: center; color: #1c2a52; }
+#dir-glass .pcard .pid { font: 600 11px ui-monospace, monospace; color: #8a94b5; text-align: center; }
+#dir-glass .pcard .ptypes { display: flex; justify-content: center; gap: 5px; }
+#dir-glass .tbadge { background: rgba(255,255,255,.85); backdrop-filter: blur(6px); box-shadow: 0 2px 8px -2px rgba(50,70,130,.25); color: #22336e; }
+#dir-glass .detail-hero { border-radius: 30px; padding: 26px; grid-template-columns: 220px 1fr; gap: 24px; align-items: center; }
+#dir-glass .detail-hero img { width: 190px; height: 190px; object-fit: contain; filter: drop-shadow(0 22px 26px rgba(59,91,219,.35)); }
+#dir-glass .panel { border-radius: 26px; padding: 22px; }
+#dir-glass .panel h3 { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 14px; color: #22336e; }
+#dir-glass .stat-row { display: grid; grid-template-columns: 90px 1fr 40px; gap: 12px; align-items: center; font-size: 14px; padding: 7px 0; color: #33415e; }
+#dir-glass .stat-row .bar { height: 8px; background: rgba(59,91,219,.12); border-radius: 99px; overflow: hidden; }
+#dir-glass .stat-row .bar i { display: block; height: 100%; background: linear-gradient(90deg,#6890f0,#3b5bdb); border-radius: 99px; }
+#dir-glass .evo-row { display: flex; align-items: center; gap: 12px; justify-content: center; }
+#dir-glass .evo { background: rgba(255,255,255,.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.8); border-radius: 20px; padding: 12px; text-align: center; min-width: 96px; }
+#dir-glass .evo img { width: 70px; height: 70px; object-fit: contain; }
+#dir-glass .evo.cur { border-color: #6890f0; box-shadow: 0 0 0 4px rgba(104,144,240,.3), 0 12px 24px -10px rgba(59,91,219,.5); }
+#dir-glass .evo-arrow { font-size: 20px; color: #93a0c4; }
+#dir-glass .tcg-panel {
+  border-radius: 26px; padding: 22px; color: #fff;
+  background: linear-gradient(140deg, rgba(28,38,70,.92), rgba(16,22,44,.94));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.14);
+  display: flex; gap: 14px; align-items: center; justify-content: center;
+}
+#dir-glass .tcg-panel img.side { width: 104px; border-radius: 10px; opacity: .4; filter: grayscale(.4); }
+#dir-glass .tcg-panel img.mid { width: 164px; border-radius: 12px; box-shadow: 0 22px 34px -10px rgba(0,0,0,.6); }
+#dir-glass .tcg-meta { text-align: center; font-size: 12px; color: rgba(255,255,255,.55); margin-top: 10px; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   DIRECTION 3 — PLAYFUL / FRANCHISE-TRUE
+   Warm sunny base, sticker-style cards with thick ink outlines +
+   offset "sticker" shadows, pill badges, bright type-color accents,
+   fun personality (rotated stickers, bouncy hover).
+────────────────────────────────────────────────────────────────────── */
+#dir-playful {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(21,30,43,.05) 1.2px, transparent 1.6px),
+    #fff4d6;
+  background-size: 22px 22px, auto;
+  padding: 24px; min-height: 60vh;
+}
+#dir-playful .sticker {
+  background: #fff;
+  border: 2.5px solid #151e2b;
+  box-shadow: 4px 5px 0 #151e2b;
+  border-radius: 18px;
+}
+#dir-playful .hero-card {
+  display: grid; grid-template-columns: 1.1fr 280px; gap: 10px; align-items: center;
+  border-radius: 26px; padding: 26px 28px;
+  background: #fff;
+  border: 3px solid #151e2b;
+  box-shadow: 6px 7px 0 #151e2b;
+  position: relative; overflow: hidden;
+}
+#dir-playful .hero-card::after {
+  content: ""; position: absolute; right: -30px; top: -30px;
+  width: 150px; height: 150px; border-radius: 50%;
+  background: #ffd800; opacity: .8;
+}
+#dir-playful .hero-name { font-size: 46px; font-weight: 900; margin: 0; letter-spacing: -.01em; color: #151e2b; }
+#dir-playful .hero-kicker { font-size: 11px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: #e33b2e; margin: 0 0 8px; }
+#dir-playful .hero-desc { font-size: 14px; line-height: 1.55; color: #4a4a4a; margin: 10px 0 16px; max-width: 44ch; }
+#dir-playful .hero-cta {
+  display: inline-block; background: #e33b2e; color: #fff; font-weight: 900; font-size: 14px;
+  padding: 12px 22px; border-radius: 999px; text-decoration: none;
+  border: 2.5px solid #151e2b; box-shadow: 3px 4px 0 #151e2b;
+}
+#dir-playful .hero-art { position: relative; z-index: 1; display: grid; place-items: center; }
+#dir-playful .hero-art img { width: 250px; height: 250px; object-fit: contain; transform: rotate(-3deg); filter: drop-shadow(0 14px 0 rgba(21,30,43,.18)); }
+#dir-playful .tbadge { border: 2px solid #151e2b; box-shadow: 2px 2px 0 #151e2b; color: #151e2b; background: #fff; font-weight: 900; }
+#dir-playful .filter-bar {
+  display: flex; gap: 8px; margin: 18px 0; padding: 10px 12px;
+  border-radius: 999px; overflow-x: auto;
+  background: #fff; border: 2.5px solid #151e2b; box-shadow: 4px 5px 0 #151e2b;
+}
+#dir-playful .fpill {
+  border: 2px solid #151e2b; background: #fff; color: #151e2b;
+  font: 800 13px system-ui; padding: 8px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+}
+#dir-playful .fpill.on { background: #ffd800; box-shadow: 2px 3px 0 #151e2b; }
+#dir-playful .card-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+#dir-playful .pcard {
+  padding: 14px; text-decoration: none; color: inherit;
+  display: grid; grid-template-rows: auto 1fr auto; gap: 6px;
+  transition: transform .18s ease;
+}
+#dir-playful .pcard:nth-child(odd) { transform: rotate(-1.2deg); }
+#dir-playful .pcard:nth-child(even) { transform: rotate(1.2deg); }
+#dir-playful .pcard:hover { transform: rotate(0deg) translateY(-5px); box-shadow: 7px 8px 0 #151e2b; }
+#dir-playful .pcard img { width: 80px; height: 80px; object-fit: contain; justify-self: center; }
+#dir-playful .pcard .pname { font-weight: 900; font-size: 15px; text-transform: capitalize; text-align: center; color: #151e2b; }
+#dir-playful .pcard .pid { font: 800 11px ui-monospace, monospace; color: #8a8a8a; text-align: center; }
+#dir-playful .pcard .ptypes { display: flex; justify-content: center; gap: 5px; }
+#dir-playful .detail-hero {
+  border-radius: 26px; padding: 24px; grid-template-columns: 210px 1fr; gap: 22px; align-items: center;
+  background: #fff; border: 3px solid #151e2b; box-shadow: 6px 7px 0 #151e2b;
+}
+#dir-playful .detail-hero img { width: 180px; height: 180px; object-fit: contain; transform: rotate(-4deg); filter: drop-shadow(0 12px 0 rgba(21,30,43,.2)); }
+#dir-playful .panel {
+  background: #fff; border: 2.5px solid #151e2b; box-shadow: 4px 5px 0 #151e2b; border-radius: 20px; padding: 20px;
+}
+#dir-playful .panel h3 { font-size: 12px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 14px; color: #151e2b; }
+#dir-playful .stat-row { display: grid; grid-template-columns: 90px 1fr 40px; gap: 12px; align-items: center; font-size: 14px; padding: 7px 0; font-weight: 700; color: #151e2b; }
+#dir-playful .stat-row .bar { height: 10px; background: #fff; border: 2px solid #151e2b; border-radius: 99px; overflow: hidden; }
+#dir-playful .stat-row .bar i { display: block; height: 100%; background: repeating-linear-gradient(45deg, #ffd800 0 8px, #e33b2e 8px 16px); }
+#dir-playful .evo-row { display: flex; align-items: center; gap: 10px; justify-content: center; }
+#dir-playful .evo { background: #fff9e8; border: 2px solid #151e2b; border-radius: 16px; padding: 10px; text-align: center; min-width: 96px; }
+#dir-playful .evo img { width: 70px; height: 70px; object-fit: contain; }
+#dir-playful .evo.cur { background: #fff3bf; box-shadow: 3px 3px 0 #151e2b; }
+#dir-playful .evo-arrow { font-size: 22px; }
+#dir-playful .tcg-panel {
+  background: #151e2b; border: 3px solid #151e2b; border-radius: 24px; padding: 20px; color: #fff;
+  box-shadow: 6px 7px 0 #ffd800;
+  display: flex; gap: 14px; align-items: center; justify-content: center;
+}
+#dir-playful .tcg-panel img.side { width: 100px; border-radius: 10px; opacity: .4; filter: grayscale(.4); }
+#dir-playful .tcg-panel img.mid { width: 160px; border-radius: 12px; border: 3px solid #ffd800; box-shadow: 0 18px 26px -8px rgba(0,0,0,.55); }
+#dir-playful .tcg-meta { text-align: center; font-size: 12px; color: #ffd800; font-weight: 800; margin-top: 10px; }
+
+/* notes strip */
+.notes {
+  max-width: 1100px; margin: 0 auto 60px; padding: 0 24px;
+  font-size: 13px; color: #5b6b7c; line-height: 1.6;
+}
+.notes strong { color: #151e2b; }
+</style>
+</head>
+<body>
+
+<div class="dir-picker">
+  <button onclick="document.getElementById('dir-refined').scrollIntoView()">① Refined system</button>
+  <button onclick="document.getElementById('dir-glass').scrollIntoView()">② Modern glass</button>
+  <button onclick="document.getElementById('dir-playful').scrollIntoView()">③ Playful franchise</button>
+  <span class="hint">scroll or jump — each section shows the full main + detail page</span>
+</div>
+
+<!-- ============================================================
+     DIRECTION 1 — REFINED DESIGN SYSTEM
+============================================================ -->
+<section class="dir" id="dir-refined">
+  <div class="dir-intro">
+    <span class="dir-tag">Direction ①</span>
+    <h1>Refined design system</h1>
+    <p>Keeps the current layout; makes it feel premium. Unified spacing/radius/shadow scale, a stronger hero (accent kicker + glow gradient), an ambient layered background, and one consistent card language across every page. Lowest risk, biggest polish-per-risk. Builds directly on the warm-paper palette.</p>
+  </div>
+
+  <div class="page-divider">Main page</div>
+  <div class="demo-app">
+    <div class="hero-card">
+      <div class="hero-info">
+        <p class="hero-kicker">Pokémon of the day</p>
+        <div class="hero-name">Pikachu <small>#0025</small></div>
+        <div style="display:flex;gap:8px;margin:12px 0;">
+          <span class="tbadge" style="background:#F0D024;color:#222"><span class="dot" style="background:rgba(0,0,0,.18)">⚡</span>electric</span>
+        </div>
+        <p class="hero-desc">Pikachu's rodent-like cheeks generate powerful electricity. It stores charges to unleash when in trouble — the classic starter-energy mascot.</p>
+        <a class="hero-cta" href="#">⚡ More details</a>
+      </div>
+      <div class="hero-art">
+        <img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu official artwork">
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="fpill on">All</button>
+      <button class="fpill">Fire</button><button class="fpill">Water</button><button class="fpill">Grass</button>
+      <button class="fpill">Electric</button><button class="fpill">Ice</button><button class="fpill">Psychic</button>
+      <button class="fpill">⭐ Favorites</button>
+    </div>
+
+    <div class="card-grid">
+      <a class="pcard" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/1.png" alt=""><span class="pname">Bulbasaur</span><span class="pid">#0001</span><span class="ptypes"><span class="tbadge" style="background:#78C850;color:#222">grass</span><span class="tbadge" style="background:#727272">poison</span></span></a>
+      <a class="pcard" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/7.png" alt=""><span class="pname">Squirtle</span><span class="pid">#0007</span><span class="ptypes"><span class="tbadge" style="background:#6890F0;color:#fff">water</span></span></a>
+      <a class="pcard" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/9.png" alt=""><span class="pname">Blastoise</span><span class="pid">#0009</span><span class="ptypes"><span class="tbadge" style="background:#6890F0;color:#fff">water</span></span></a>
+      <a class="pcard" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/25.png" alt=""><span class="pname">Pikachu</span><span class="pid">#0025</span><span class="ptypes"><span class="tbadge" style="background:#F0D024;color:#222">electric</span></span></a>
+      <a class="pcard" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/4.png" alt=""><span class="pname">Charmander</span><span class="pid">#0004</span><span class="ptypes"><span class="tbadge" style="background:#F08030;color:#fff">fire</span></span></a>
+      <a class="pcard" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/26.png" alt=""><span class="pname">Raichu</span><span class="pid">#0026</span><span class="ptypes"><span class="tbadge" style="background:#727272">normal</span></span></a>
+    </div>
+  </div>
+
+  <div class="page-divider">Detail page</div>
+  <div class="demo-app">
+    <div class="detail-hero">
+      <img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu">
+      <div>
+        <div style="font-size:32px;font-weight:800;margin:0 0 2px;">Pikachu <span style="font:600 16px ui-monospace,monospace;color:#8794a3;">#0025</span></div>
+        <div style="display:flex;gap:8px;margin:10px 0;"><span class="tbadge" style="background:#F0D024;color:#222">electric</span></div>
+        <div style="display:flex;gap:8px;">
+          <span style="background:rgba(255,253,248,.9);border:1px solid rgba(255,255,255,.9);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)">H 0.4 m · W 6.0 kg</span>
+          <span style="background:rgba(255,253,248,.9);border:1px solid rgba(255,255,255,.9);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)">Static</span>
+        </div>
+        <p style="margin:14px 0 0;font-size:14px;line-height:1.6;color:#3a4658;max-width:44ch;">It stores electricity in the yellow sac on its tail. In a storm, the air around it crackles as it charges up — mischievous and full of energy.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+      <div class="panel">
+        <h3>Evolution</h3>
+        <div class="evo-row">
+          <div class="evo cur"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png"><div>Pikachu</div></div>
+          <span class="evo-arrow">→</span>
+          <div class="evo"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/26.png"><div>Raichu</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Base Stats</h3>
+        <div class="stat-row"><span>hp</span><span class="bar"><i style="width:20%"></i></span><span>35</span></div>
+        <div class="stat-row"><span>attack</span><span class="bar"><i style="width:28%"></i></span><span>55</span></div>
+        <div class="stat-row"><span>defense</span><span class="bar"><i style="width:24%"></i></span><span>40</span></div>
+        <div class="stat-row"><span>sp. atk</span><span class="bar"><i style="width:25%"></i></span><span>50</span></div>
+        <div class="stat-row"><span>speed</span><span class="bar"><i style="width:45%"></i></span><span>90</span></div>
+      </div>
+    </div>
+
+    <div class="tcg-panel" style="margin-top:16px;">
+      <img class="side" src="https://assets.tcgdex.net/en/base/basep/2/low.webp" alt="prev card">
+      <div>
+        <img class="mid" src="https://assets.tcgdex.net/en/base/basep/1/low.webp" alt="Pikachu card">
+        <div class="tcg-meta">Pikachu · 1/53 (Wizards Black Star Promos)</div>
+      </div>
+      <img class="side" src="https://assets.tcgdex.net/en/base/basep/3/low.webp" alt="next card">
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     DIRECTION 2 — BOLD MODERN GLASS + DEPTH
+============================================================ -->
+<section class="dir" id="dir-glass">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="dir-intro" style="position:relative;z-index:1">
+    <span class="dir-tag">Direction ②</span>
+    <h1>Bold modern glass + depth</h1>
+    <p>A bigger visual leap: cool light base with large ambient blurred color blobs, glass panels (translucent + blur), big soft radii, and floating depth on hover. Reads "2024 design"; most striking, most departure from the current warm look.</p>
+  </div>
+
+  <div class="page-divider" style="position:relative;z-index:1">Main page</div>
+  <div class="demo-app" style="position:relative;z-index:1">
+    <div class="hero-card glass">
+      <div>
+        <p class="hero-kicker">Pokémon of the day</p>
+        <div class="hero-name">Pikachu</div>
+        <div style="display:flex;gap:8px;margin:12px 0;"><span class="tbadge">⚡ electric</span></div>
+        <p class="hero-desc">Rodent-like cheeks generate powerful electricity — the classic starter-energy mascot of the franchise.</p>
+        <a class="hero-cta" href="#">More details →</a>
+      </div>
+      <div class="hero-art"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu"></div>
+    </div>
+
+    <div class="filter-bar glass">
+      <button class="fpill on">All</button><button class="fpill">Fire</button><button class="fpill">Water</button><button class="fpill">Grass</button><button class="fpill">Electric</button><button class="fpill">Ice</button><button class="fpill">⭐ Favorites</button>
+    </div>
+
+    <div class="card-grid">
+      <a class="pcard glass" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/1.png" alt=""><span class="pname">Bulbasaur</span><span class="pid">#0001</span><span class="ptypes"><span class="tbadge">grass</span><span class="tbadge">poison</span></span></a>
+      <a class="pcard glass" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/7.png" alt=""><span class="pname">Squirtle</span><span class="pid">#0007</span><span class="ptypes"><span class="tbadge">water</span></span></a>
+      <a class="pcard glass" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/9.png" alt=""><span class="pname">Blastoise</span><span class="pid">#0009</span><span class="ptypes"><span class="tbadge">water</span></span></a>
+      <a class="pcard glass" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/25.png" alt=""><span class="pname">Pikachu</span><span class="pid">#0025</span><span class="ptypes"><span class="tbadge">electric</span></span></a>
+      <a class="pcard glass" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/4.png" alt=""><span class="pname">Charmander</span><span class="pid">#0004</span><span class="ptypes"><span class="tbadge">fire</span></span></a>
+      <a class="pcard glass" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/26.png" alt=""><span class="pname">Raichu</span><span class="pid">#0026</span><span class="ptypes"><span class="tbadge">normal</span></span></a>
+    </div>
+  </div>
+
+  <div class="page-divider" style="position:relative;z-index:1">Detail page</div>
+  <div class="demo-app" style="position:relative;z-index:1">
+    <div class="detail-hero glass">
+      <img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu">
+      <div>
+        <div style="font-size:30px;font-weight:900;background:linear-gradient(90deg,#22336e,#3b5bdb);-webkit-background-clip:text;background-clip:text;color:transparent;">Pikachu</div>
+        <div style="display:flex;gap:8px;margin:10px 0;"><span class="tbadge">⚡ electric</span></div>
+        <p style="font-size:14px;line-height:1.6;color:#55617d;max-width:44ch;">Floats gently above a type-tinted glass hero; the art casts a soft blue depth shadow and drifts on a slow loop.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+      <div class="panel glass">
+        <h3>Evolution</h3>
+        <div class="evo-row">
+          <div class="evo cur"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png"><div>Pikachu</div></div>
+          <span class="evo-arrow">→</span>
+          <div class="evo"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/26.png"><div>Raichu</div></div>
+        </div>
+      </div>
+      <div class="panel glass">
+        <h3>Base Stats</h3>
+        <div class="stat-row"><span>hp</span><span class="bar"><i style="width:20%"></i></span><span>35</span></div>
+        <div class="stat-row"><span>attack</span><span class="bar"><i style="width:28%"></i></span><span>55</span></div>
+        <div class="stat-row"><span>defense</span><span class="bar"><i style="width:24%"></i></span><span>40</span></div>
+        <div class="stat-row"><span>sp. atk</span><span class="bar"><i style="width:25%"></i></span><span>50</span></div>
+        <div class="stat-row"><span>speed</span><span class="bar"><i style="width:45%"></i></span><span>90</span></div>
+      </div>
+    </div>
+
+    <div class="tcg-panel" style="margin-top:16px;">
+      <img class="side" src="https://assets.tcgdex.net/en/base/basep/2/low.webp" alt="prev card">
+      <div>
+        <img class="mid" src="https://assets.tcgdex.net/en/base/basep/1/low.webp" alt="Pikachu card">
+        <div class="tcg-meta">Pikachu · 1/53 · holo ★</div>
+      </div>
+      <img class="side" src="https://assets.tcgdex.net/en/base/basep/3/low.webp" alt="next card">
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     DIRECTION 3 — PLAYFUL / FRANCHISE-TRUE
+============================================================ -->
+<section class="dir" id="dir-playful">
+  <div class="dir-intro">
+    <span class="dir-tag">Direction ③</span>
+    <h1>Playful / franchise-true</h1>
+    <p>Leans hard into Pokémon: a sunny warm base, sticker-style cards with thick ink outlines and offset sticker shadows, bright type-color accents, rotated "stuck-on" artwork, and bouncy hovers. The most personality; reads like a kids' trading-card game came to life.</p>
+  </div>
+
+  <div class="page-divider">Main page</div>
+  <div class="demo-app">
+    <div class="hero-card">
+      <div>
+        <p class="hero-kicker">★ Pokémon of the day</p>
+        <div class="hero-name">Pikachu!</div>
+        <div style="display:flex;gap:8px;margin:12px 0;"><span class="tbadge" style="background:#F0D024">⚡ Electric</span></div>
+        <p class="hero-desc">Mischievous, electric and full of energy — the little rodent that sparks every storm. It loves nothing more than a sunny day to zoom around.</p>
+        <a class="hero-cta" href="#">Zap to details ⚡</a>
+      </div>
+      <div class="hero-art"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu"></div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="fpill on">All</button><button class="fpill">🔥 Fire</button><button class="fpill">💧 Water</button><button class="fpill">🌿 Grass</button><button class="fpill">⚡ Electric</button><button class="fpill">⭐ Favorites</button>
+    </div>
+
+    <div class="card-grid">
+      <a class="pcard sticker" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/1.png" alt=""><span class="pname">Bulbasaur</span><span class="pid">#0001</span><span class="ptypes"><span class="tbadge" style="background:#78C850">Grass</span><span class="tbadge">Poison</span></span></a>
+      <a class="pcard sticker" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/7.png" alt=""><span class="pname">Squirtle</span><span class="pid">#0007</span><span class="ptypes"><span class="tbadge" style="background:#6890F0;color:#fff">Water</span></span></a>
+      <a class="pcard sticker" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/9.png" alt=""><span class="pname">Blastoise</span><span class="pid">#0009</span><span class="ptypes"><span class="tbadge" style="background:#6890F0;color:#fff">Water</span></span></a>
+      <a class="pcard sticker" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/25.png" alt=""><span class="pname">Pikachu</span><span class="pid">#0025</span><span class="ptypes"><span class="tbadge" style="background:#F0D024">Electric</span></span></a>
+      <a class="pcard sticker" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/4.png" alt=""><span class="pname">Charmander</span><span class="pid">#0004</span><span class="ptypes"><span class="tbadge" style="background:#F08030;color:#fff">Fire</span></span></a>
+      <a class="pcard sticker" href="#"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/26.png" alt=""><span class="pname">Raichu</span><span class="pid">#0026</span><span class="ptypes"><span class="tbadge">Normal</span></span></a>
+    </div>
+  </div>
+
+  <div class="page-divider">Detail page</div>
+  <div class="demo-app">
+    <div class="detail-hero">
+      <img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu">
+      <div>
+        <div style="font-size:32px;font-weight:900;margin:0 0 4px;">Pikachu</div>
+        <div style="display:flex;gap:8px;margin:10px 0;"><span class="tbadge" style="background:#F0D024">⚡ Electric</span></div>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#4a4a4a;max-width:44ch;">A bouncy, sticker-framed detail card — thick ink outline, offset shadow, rotated artwork. The whole page feels like a bright trading-card book spread.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;">
+      <div class="panel">
+        <h3>Evolution</h3>
+        <div class="evo-row">
+          <div class="evo cur"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png"><div style="font-weight:900">Pikachu</div></div>
+          <span class="evo-arrow">➜</span>
+          <div class="evo"><img src="https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/26.png"><div style="font-weight:900">Raichu</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Base Stats</h3>
+        <div class="stat-row"><span>HP</span><span class="bar"><i style="width:20%"></i></span><span>35</span></div>
+        <div class="stat-row"><span>ATK</span><span class="bar"><i style="width:28%"></i></span><span>55</span></div>
+        <div class="stat-row"><span>DEF</span><span class="bar"><i style="width:24%"></i></span><span>40</span></div>
+        <div class="stat-row"><span>SPD</span><span class="bar"><i style="width:45%"></i></span><span>90</span></div>
+      </div>
+    </div>
+
+    <div class="tcg-panel" style="margin-top:18px;">
+      <img class="side" src="https://assets.tcgdex.net/en/base/basep/2/low.webp" alt="prev card">
+      <div>
+        <img class="mid" src="https://assets.tcgdex.net/en/base/basep/1/low.webp" alt="Pikachu card">
+        <div class="tcg-meta">★ Pika-CHU · 1/53</div>
+      </div>
+      <img class="side" src="https://assets.tcgdex.net/en/base/basep/3/low.webp" alt="next card">
+    </div>
+  </div>
+</section>
+
+<div class="notes">
+  <strong>How to read this preview:</strong> each section shows the same real screens (Pokémon-of-the-day hero → type filter bar → card grid → detail hero → evolution/stats → TCG panel) in three visual directions, using the live sprites and a real TCGdex card. Pick one and I'll apply it across <code>index.css</code> (+ the matching JSX tokens), keeping all existing layout/behavior intact.<br><br>
+  <strong>My recommendation:</strong> Direction ① (Refined system) if you want the biggest upgrade with the least risk — it polishes the current structure into something that feels premium. Direction ② if you want a bold, modern, "2024" leap. Direction ③ if you want maximum Pokémon personality and don't mind a playful, less corporate look.<br><br>
+  You can also mix: e.g. "① structure but with ③'s sticker accents on the grid."
+</div>
+
+</body>
+</html>
